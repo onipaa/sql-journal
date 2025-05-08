@@ -1,0 +1,235 @@
+ANALYZE
+ANALYZE
+ANALYZE
+
+EACH SECTION:
+No Index
+B-tree Index
+BRIN Index
+
+
+Benchmark Query 1 - Last 7 Days, Specific Status Codes
+                                                                         QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2815975.74..2815987.41 rows=100 width=48) (actual time=11763.209..11766.462 rows=100 loops=1)
+   Buffers: shared hit=370 read=1780480
+   ->  Gather Merge  (cost=2815975.74..2834050.53 rows=154916 width=48) (actual time=11626.864..11630.110 rows=100 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=370 read=1780480
+         ->  Sort  (cost=2814975.71..2815169.36 rows=77458 width=48) (actual time=11619.885..11619.892 rows=81 loops=3)
+               Sort Key: created_at DESC
+               Sort Method: top-N heapsort  Memory: 36kB
+               Buffers: shared hit=370 read=1780480
+               Worker 0:  Sort Method: top-N heapsort  Memory: 36kB
+               Worker 1:  Sort Method: top-N heapsort  Memory: 37kB
+               ->  Parallel Seq Scan on web_log_noix  (cost=0.00..2812015.33 rows=77458 width=48) (actual time=70.583..11592.683 rows=63205 loops=3)
+                     Filter: ((status_code = ANY ('{500,404}'::integer[])) AND (http_method = 'GET'::text) AND (created_at >= (now() - '7 days'::interval)))
+                     Rows Removed by Filter: 36603462
+                     Buffers: shared hit=256 read=1780480
+ Planning:
+   Buffers: shared hit=50
+ Planning Time: 1.721 ms
+ JIT:
+   Functions: 13
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 1.449 ms (Deform 0.745 ms), Inlining 148.468 ms, Optimization 119.649 ms, Emission 78.274 ms, Total 347.840 ms
+ Execution Time: 11863.683 ms
+(24 rows)
+
+                                                                           QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.57..455.55 rows=100 width=47) (actual time=2.794..29.242 rows=100 loops=1)
+   Buffers: shared hit=13 read=117
+   ->  Index Scan Backward using btree_web_log_multi on web_log_btree  (cost=0.57..897271.37 rows=197213 width=47) (actual time=2.793..29.229 rows=100 loops=1)
+         Index Cond: ((created_at >= (now() - '7 days'::interval)) AND (status_code = ANY ('{500,404}'::integer[])) AND (http_method = 'GET'::text))
+         Buffers: shared hit=13 read=117
+ Planning:
+   Buffers: shared hit=28 read=1
+ Planning Time: 0.873 ms
+ Execution Time: 29.261 ms
+(9 rows)
+
+                                                                         QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=722483.56..722483.81 rows=100 width=47) (actual time=1472.514..1472.525 rows=100 loops=1)
+   Buffers: shared read=97818 written=14
+   ->  Sort  (cost=722483.56..722952.15 rows=187435 width=47) (actual time=1409.197..1409.202 rows=100 loops=1)
+         Sort Key: created_at DESC
+         Sort Method: top-N heapsort  Memory: 39kB
+         Buffers: shared read=97818 written=14
+         ->  Index Scan using btree_web_log_target on web_log  (cost=0.57..715319.93 rows=187435 width=47) (actual time=4.208..1369.229 rows=189612 loops=1)
+               Index Cond: ((status_code = ANY ('{500,404}'::integer[])) AND (http_method = 'GET'::text) AND (created_at >= (now() - '7 days'::interval)))
+               Buffers: shared read=97818 written=14
+ Planning:
+   Buffers: shared hit=49 read=3
+ Planning Time: 2.298 ms
+ JIT:
+   Functions: 6
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.376 ms (Deform 0.197 ms), Inlining 8.381 ms, Optimization 34.145 ms, Emission 20.794 ms, Total 63.695 ms
+ Execution Time: 1472.956 ms
+(17 rows)
+
+Benchmark Query 2 - Specific Status Code with Method
+                                                                QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..2746082.55 rows=2768270 width=48) (actual time=58.001..3081.038 rows=2748097 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared read=1780736
+   ->  Parallel Seq Scan on web_log_noix  (cost=0.00..2468255.55 rows=1153446 width=48) (actual time=81.363..2971.612 rows=916032 loops=3)
+         Filter: ((status_code = 404) AND (http_method = 'GET'::text))
+         Rows Removed by Filter: 35750634
+         Buffers: shared read=1780736
+ Planning Time: 0.043 ms
+ JIT:
+   Functions: 12
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 1.135 ms (Deform 0.509 ms), Inlining 91.042 ms, Optimization 95.424 ms, Emission 57.548 ms, Total 245.150 ms
+ Execution Time: 3166.488 ms
+(14 rows)
+
+                                                                 QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..2747493.70 rows=2782313 width=47) (actual time=57.570..11406.743 rows=2748097 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared read=1780715
+   ->  Parallel Seq Scan on web_log_btree  (cost=0.00..2468262.40 rows=1159297 width=47) (actual time=82.154..11134.428 rows=916032 loops=3)
+         Filter: ((status_code = 404) AND (http_method = 'GET'::text))
+         Rows Removed by Filter: 35750634
+         Buffers: shared read=1780715
+ Planning Time: 0.059 ms
+ JIT:
+   Functions: 12
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 1.075 ms (Deform 0.507 ms), Inlining 90.707 ms, Optimization 96.489 ms, Emission 57.513 ms, Total 245.784 ms
+ Execution Time: 11503.168 ms
+(14 rows)
+
+                                                              QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..2747016.25 rows=2778096 width=47) (actual time=55.931..11741.925 rows=2748097 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=15831 read=1764885
+   ->  Parallel Seq Scan on web_log  (cost=0.00..2468206.65 rows=1157540 width=47) (actual time=81.123..11401.998 rows=916032 loops=3)
+         Filter: ((status_code = 404) AND (http_method = 'GET'::text))
+         Rows Removed by Filter: 35750634
+         Buffers: shared hit=15831 read=1764885
+ Planning Time: 0.060 ms
+ JIT:
+   Functions: 12
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.883 ms (Deform 0.463 ms), Inlining 92.374 ms, Optimization 93.514 ms, Emission 56.209 ms, Total 242.980 ms
+ Execution Time: 11836.658 ms
+(14 rows)
+
+Benchmark Query 3 - Full Range Scan with Sorting
+                                                                        QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5514442.94..5515609.69 rows=10000 width=48) (actual time=11757.623..11762.978 rows=10000 loops=1)
+   Buffers: shared hit=198 read=1780652
+   ->  Gather Merge  (cost=5514442.94..16209938.30 rows=91669274 width=48) (actual time=11728.827..11733.601 rows=10000 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=198 read=1780652
+         ->  Sort  (cost=5513442.92..5628029.51 rows=45834637 width=48) (actual time=11723.775..11724.355 rows=3816 loops=3)
+               Sort Key: created_at DESC
+               Sort Method: top-N heapsort  Memory: 2462kB
+               Buffers: shared hit=198 read=1780652
+               Worker 0:  Sort Method: top-N heapsort  Memory: 2480kB
+               Worker 1:  Sort Method: top-N heapsort  Memory: 2476kB
+               ->  Parallel Seq Scan on web_log_noix  (cost=0.00..2239082.37 rows=45834637 width=48) (actual time=42.630..6028.625 rows=36666667 loops=3)
+                     Buffers: shared hit=96 read=1780640
+ Planning Time: 0.045 ms
+ JIT:
+   Functions: 7
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.486 ms (Deform 0.318 ms), Inlining 74.131 ms, Optimization 51.019 ms, Emission 31.457 ms, Total 157.093 ms
+ Execution Time: 11763.525 ms
+(20 rows)
+
+                                                                                QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.57..31822.94 rows=10000 width=47) (actual time=1.345..1995.503 rows=10000 loops=1)
+   Buffers: shared hit=102 read=10034
+   ->  Index Scan Backward using btree_web_log_multi on web_log_btree  (cost=0.57..350070238.15 rows=110007584 width=47) (actual time=1.344..1994.346 rows=10000 loops=1)
+         Buffers: shared hit=102 read=10034
+ Planning Time: 0.051 ms
+ Execution Time: 1996.299 ms
+(6 rows)
+
+                                                                     QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5514266.01..5515432.76 rows=10000 width=47) (actual time=15991.402..15996.987 rows=10000 loops=1)
+   Buffers: shared hit=5871 read=1774919
+   ->  Gather Merge  (cost=5514266.01..16209311.71 rows=91665420 width=47) (actual time=15964.209..15969.218 rows=10000 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=5871 read=1774919
+         ->  Sort  (cost=5513265.99..5627847.77 rows=45832710 width=47) (actual time=15958.533..15958.854 rows=3811 loops=3)
+               Sort Key: created_at DESC
+               Sort Method: top-N heapsort  Memory: 2774kB
+               Buffers: shared hit=5871 read=1774919
+               Worker 0:  Sort Method: top-N heapsort  Memory: 2781kB
+               Worker 1:  Sort Method: top-N heapsort  Memory: 2777kB
+               ->  Parallel Seq Scan on web_log  (cost=0.00..2239043.10 rows=45832710 width=47) (actual time=42.846..5382.288 rows=36666667 loops=3)
+                     Buffers: shared hit=5797 read=1774919
+ Planning Time: 0.055 ms
+ JIT:
+   Functions: 7
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.531 ms (Deform 0.341 ms), Inlining 75.694 ms, Optimization 49.059 ms, Emission 30.363 ms, Total 155.648 ms
+ Execution Time: 15997.571 ms
+(20 rows)
+
+Benchmark Query 4 - Large Range Scan (Last 180 Days)
+                                                            QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on web_log_noix  (cost=0.00..3705790.74 rows=109188070 width=48) (actual time=58.847..27642.430 rows=109268755 loops=1)
+   Filter: (created_at >= (now() - '180 days'::interval))
+   Rows Removed by Filter: 731245
+   Buffers: shared hit=171 read=1780565
+ Planning Time: 0.052 ms
+ JIT:
+   Functions: 4
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.334 ms (Deform 0.205 ms), Inlining 5.343 ms, Optimization 33.563 ms, Emission 19.596 ms, Total 58.836 ms
+ Execution Time: 30939.196 ms
+(10 rows)
+
+                                                            QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on web_log_btree  (cost=0.00..3705847.72 rows=109276072 width=47) (actual time=56.260..33555.574 rows=109268547 loops=1)
+   Filter: (created_at >= (now() - '180 days'::interval))
+   Rows Removed by Filter: 731453
+   Buffers: shared hit=10025 read=1770690
+ Planning:
+   Buffers: shared hit=1 read=4
+ Planning Time: 2.180 ms
+ JIT:
+   Functions: 4
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.331 ms (Deform 0.198 ms), Inlining 4.098 ms, Optimization 32.339 ms, Emission 19.292 ms, Total 56.060 ms
+ Execution Time: 36847.486 ms
+(12 rows)
+
+                                                           QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on web_log  (cost=0.00..3705689.82 rows=109189902 width=47) (actual time=272.240..31565.954 rows=109268306 loops=1)
+   Filter: (created_at >= (now() - '180 days'::interval))
+   Rows Removed by Filter: 731694
+   Buffers: shared hit=5860 read=1774856
+ Planning:
+   Buffers: shared read=1
+ Planning Time: 0.513 ms
+ JIT:
+   Functions: 4
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.314 ms (Deform 0.198 ms), Inlining 4.206 ms, Optimization 31.283 ms, Emission 18.550 ms, Total 54.354 ms
+ Execution Time: 34870.932 ms
+(12 rows)
+
+Benchmarking Complete.
