@@ -45,14 +45,9 @@ $$;
 
 
 -- adding order by as per suggestion from external sources
-create table web_log_brin
-    as select * from web_log order by created_at;
-
-create table web_log_btree
-    as select * from web_log order by created_at;
-
-create table web_log_noix
-    as select * from web_log order by created_at;
+create table web_log_brin as select * from web_log order by created_at, status_code, http_method;select * from web_log order by created_at, status_code, http_method;
+create table web_log_btree as select * from web_log order by created_at, status_code, http_method;select * from web_log order by created_at, status_code, http_method;
+create table web_log_noix as select * from web_log order by created_at, status_code, http_method;select * from web_log order by created_at, status_code, http_method;
 
 create index brin_web_log_multi
     on web_log_brin using brin (id, status_code, created_at, http_method)
@@ -62,6 +57,7 @@ create index concurrently if not exists btree_web_log_multi
     on web_log_btree (created_at, status_code, http_method, id);
 
 select brin_summarize_new_values('brin_web_log_multi');
+
 vacuum full analyze web_log_brin;
 vacuum full analyze web_log_btree;
 vacuum full analyze web_log_noix;
