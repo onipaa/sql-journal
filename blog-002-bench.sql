@@ -4,7 +4,7 @@
 -- Ensure all tables are analyzed
 analyze web_log_noix;
 analyze web_log_btree;
-analyze web_log;
+analyze web_log_brin;
 
 -- Define common query structure
 \set interval_7days '7 days'
@@ -34,7 +34,7 @@ order by created_at desc limit 100;
 \echo 'BRIN Index (pages_per_range = 32):'
 explain (analyze, buffers)
 select id, user_ip, path, http_method, status_code, created_at
-from web_log
+from web_log_brin
 where created_at >= now() - interval :'interval_7days'
   and status_code in (500, 404)
   and http_method = 'GET'
@@ -58,7 +58,7 @@ where status_code = 404 and http_method = 'GET';
 \echo 'BRIN Index (pages_per_range = 32):'
 explain (analyze, buffers)
 select id, user_ip, path, created_at
-from web_log
+from web_log_brin
 where status_code = 404 and http_method = 'GET';
 
 -- Benchmark Query 3: Full Range Scan with Sorting
@@ -79,7 +79,7 @@ order by created_at desc limit 10000;
 \echo 'BRIN Index (pages_per_range = 32):'
 explain (analyze, buffers)
 select id, user_ip, path, created_at
-from web_log
+from web_log_brin
 order by created_at desc limit 10000;
 
 -- Benchmark Query 4: Large Range Scan (Last 180 Days)
