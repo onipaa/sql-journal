@@ -33,3 +33,14 @@ create table web_log_btree
 create table web_log_noix
     as select * from web_log order by created_at;
 
+create index brin_web_log_multi
+    on web_log_brin using brin (id, status_code, created_at, http_method)
+    with (pages_per_range = 8);
+
+create index concurrently if not exists btree_web_log_multi
+    on web_log_btree (created_at, status_code, http_method, id);
+
+select brin_summarize_new_values('brin_web_log_multi');
+vacuum full analyze web_log_brin;
+vacuum full analyze web_log_btree;
+vacuum full analyze web_log_noix;
