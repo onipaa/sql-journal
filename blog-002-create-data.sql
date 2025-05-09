@@ -1,28 +1,9 @@
 create extension if not exists pgcrypto;
-
-create or replace function generate_ulid()
-returns bytea
-language plpgsql
-as $$
-declare
-    ts_ms bigint := extract(epoch from clock_timestamp()) * 1000;
-    ts_bin bytea := set_byte(set_byte(set_byte(set_byte(
-                    '\x00000000000000000000000000000000'::bytea,
-                    0, (ts_ms >> 40) & 255),
-                    1, (ts_ms >> 32) & 255),
-                    2, (ts_ms >> 24) & 255),
-                    3, (ts_ms >> 16) & 255);
-    rand_bytes bytea := gen_random_bytes(10);
-    full_ulid bytea := ts_bin || rand_bytes;
-begin
-    return full_ulid::bytea;
-end;
-$$;
+create extension if not exists "uuid-ossp";
 
 drop table if exists web_log;
-
 create table web_log (
-    id           bytea primary key default generate_ulid(),
+    id uuid primary key default uuid_generate_v1(),
     user_ip      inet,
     user_agent   text,
     path         text,
