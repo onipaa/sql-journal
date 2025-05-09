@@ -21,11 +21,15 @@ select
     (array[200, 201, 204, 301, 302, 400, 401, 403, 404, 500])[floor(random()*10+1)],
     (random()*1000)::int,
     now() - (random() * interval '90 days')
-from generate_series(1, 100000000);
+from generate_series(1, 1000000000);
+
+-- adding order by as per suggestion from external sources
+create table web_log_brin
+    as select * from web_log order by created_at;
 
 create table web_log_btree
-    as select * from web_log;
+    as select * from web_log order by created_at;
 
 create table web_log_noix
-    as select * from web_log;
+    as select * from web_log order by created_at;
 
