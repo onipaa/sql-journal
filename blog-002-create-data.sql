@@ -14,21 +14,32 @@ create table web_log (
 -- generates 100,000,000 rows
 -- widen range to 1 year
 -- complete 20 loops of 50,000,000 for 1,000,000,000 rows
+SET enable_parallel_append = on;
+SET enable_parallel_hash = on;
+SET enable_parallel_seqscan = on;
+SET enable_parallel_vacuum = on;
+SET parallel_leader_participation = on;
+SET max_parallel_workers_per_gather = 8;
+
 do $$
-    begin
-        for i in 1 .. 20 loop
-            insert into web_log (user_ip, user_agent, path, http_method, status_code, response_ms, created_at)
-            select ('192.' || (random()*255)::int || '.' || (random()*255)::int || '.' || (random()*255)::int)::inet
-                 , ('Mozilla/5.0 ' || md5(random()::text))
-                 , '/page/' || (1 + floor(random() * 100))::int
-                 , (array['GET','POST','PUT','DELETE'])[floor(random()*4+1)]
-                 , (array[200, 201, 204, 301, 302, 400, 401, 403, 404, 500])[floor(random()*10+1)]
-                 , (random()*1000)::int
-                 , now() - (random() * interval '365 days')
-              from generate_series(1, 50000000);
-        end loop;
-    end;
+begin
+    for i in 1 .. 20 loop
+        with data as (
+            select ('192.' || (random()*255)::int || '.' || (random()*255)::int || '.' || (random()*255)::int)::inet as user_ip,
+                   ('Mozilla/5.0 ' || md5(random()::text)) as user_agent,
+                   '/page/' || (1 + floor(random() * 100))::int as path,
+                   (array['GET','POST','PUT','DELETE'])[floor(random()*4+1)] as http_method,
+                   (array[200, 201, 204, 301, 302, 400, 401, 403, 404, 500])[floor(random()*10+1)] as status_code,
+                   (random()*1000)::int as response_ms,
+                   now() - (random() * interval '365 days') as created_at
+            from generate_series(1, 50000000)
+        )
+        insert into web_log (user_ip, user_agent, path, http_method, status_code, response_ms, created_at)
+        select * from data;
+    end loop;
+end;
 $$;
+
 
 
 -- adding order by as per suggestion from external sources
