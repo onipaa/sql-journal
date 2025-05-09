@@ -1,7 +1,7 @@
 create extension if not exists pgcrypto;
 
 create or replace function generate_ulid()
-returns text
+returns bytea
 language plpgsql
 as $$
 declare
@@ -14,16 +14,15 @@ declare
                     3, (ts_ms >> 16) & 255);
     rand_bytes bytea := gen_random_bytes(10);
     full_ulid bytea := ts_bin || rand_bytes;
-    result text := encode(full_ulid, 'base32'); -- Crockford Base32 is best but we fake it here
 begin
-    return lower(translate(result, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', '0123456789ABCDEFGHJKMNPQRSTVWXYZ'));
+    return full_ulid::bytea;
 end;
 $$;
 
 drop table if exists web_log;
 
 create table web_log (
-    id           uuid primary key default generate_ulid(),
+    id           bytea primary key default generate_ulid(),
     user_ip      inet,
     user_agent   text,
     path         text,
