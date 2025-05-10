@@ -56,7 +56,7 @@ create index concurrently if not exists btree_web_log_multi
 
 select brin_summarize_new_values('brin_web_log_multi');
 
-vacuum full analyze web_log_brin;
+vacuum analyze web_log_brin;
 vacuum full analyze web_log_btree;
 vacuum full analyze web_log_noix;
 
