@@ -59,3 +59,12 @@ select brin_summarize_new_values('brin_web_log_multi');
 vacuum full analyze web_log_brin;
 vacuum full analyze web_log_btree;
 vacuum full analyze web_log_noix;
+
+select  schemaname
+     ,  relname
+     ,  pg_size_pretty(pg_total_relation_size(relid)) total_size_ix_and_table_and_toast
+     ,  pg_size_pretty(pg_relation_size(relid)) table_size
+     ,  pg_size_pretty(pg_indexes_size(relid)) index_size
+     ,  pg_size_pretty(pg_table_size(relid))  toast_size
+  from  pg_statio_user_tables
+ where  relname like '%web_log%';
