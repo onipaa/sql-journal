@@ -43,9 +43,9 @@ end;
 $$;
 
 -- adding order by as per suggestion from external sources
-create table web_log_brin as select * from web_log order by created_at, status_code, http_method;select * from web_log order by created_at, status_code, http_method;
-create table web_log_btree as select * from web_log order by created_at, status_code, http_method;select * from web_log order by created_at, status_code, http_method;
-create table web_log_noix as select * from web_log order by created_at, status_code, http_method;select * from web_log order by created_at, status_code, http_method;
+create table web_log_brin as select * from web_log order by created_at, status_code, http_method;
+create table web_log_btree as select * from web_log order by created_at, status_code, http_method;
+create table web_log_noix as select * from web_log order by created_at, status_code, http_method;
 
 create index brin_web_log_multi
     on web_log_brin using brin (id, status_code, created_at, http_method)
