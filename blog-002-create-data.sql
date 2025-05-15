@@ -13,7 +13,7 @@ create table web_log (
     created_at   timestamptz default now()
 );
 
--- generates 100,000,000 rows
+-- generates 1,000,000,000 rows
 -- widen range to 1 year
 -- complete 20 loops of 50,000,000 for 1,000,000,000 rows
 SET enable_parallel_append = on;
